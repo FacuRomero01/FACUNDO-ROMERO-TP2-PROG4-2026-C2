@@ -1,0 +1,331 @@
+/* ==========================================================================
+       CONECTA - RED SOCIAL | SISTEMA DE DISEÑO INSPIRADO EN TEAM FORTRESS 2
+       ========================================================================== */
+
+    :root {
+      /* Paleta TF2: RED vs BLU, Mann Co. & Metal Industrial */
+      --tf-red: #b8383b;
+      --tf-red-dark: #8c2424;
+      --tf-red-light: #f6e6e6;
+
+      --tf-blu: #5b7a8c;
+      --tf-blu-dark: #3b515e;
+      --tf-blu-light: #eaf0f4;
+
+      --tf-paper-bg: #ece3d3;
+      --tf-paper-card: #fbf8f2;
+      --tf-sand: #d1c3ad;
+
+      --tf-metal-dark: #272321;
+      --tf-metal-gray: #524b46;
+      --tf-metal-light: #7c736c;
+
+      --tf-amber: #de9538;
+      --tf-amber-light: #fcf4e8;
+      --tf-green: #4a7c43;
+      --tf-green-light: #edf5ed;
+
+      /* Asignación a variables estándar del sistema */
+      --primary: var(--tf-red);
+      --primary-hover: var(--tf-red-dark);
+      --primary-light: var(--tf-red-light);
+      --secondary: var(--tf-blu);
+      --success: var(--tf-green);
+      --success-bg: var(--tf-green-light);
+      --warning: var(--tf-amber);
+      --warning-bg: var(--tf-amber-light);
+      --danger: #a82424;
+      --danger-bg: #fbebeb;
+      --info: var(--tf-blu);
+      --info-bg: var(--tf-blu-light);
+
+      --bg-main: var(--tf-paper-bg);
+      --bg-card: var(--tf-paper-card);
+      --border: var(--tf-metal-dark);
+      --border-muted: var(--tf-sand);
+      --text-main: var(--tf-metal-dark);
+      --text-muted: var(--tf-metal-gray);
+      --text-subtle: var(--tf-metal-light);
+
+      /* Tipografías */
+      --font-display: 'Bebas Neue', 'Oswald', 'Impact', sans-serif;
+      --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Space Mono', 'Courier New', monospace;
+
+      /* Bordes y Sombras Táctiles de Placa Industrial */
+      --border-width: 2px;
+      --radius-sm: 3px;
+      --radius-md: 5px;
+      --radius-lg: 8px;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 2px 0 var(--tf-metal-dark);
+      --shadow-md: 0 4px 0 var(--tf-metal-dark);
+      --shadow-lg: 0 6px 0 var(--tf-metal-dark);
+      --shadow-pressed: 0 1px 0 var(--tf-metal-dark);
+
+      --transition: all 0.15s ease-in-out;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg-main);
+      background-image:
+        radial-gradient(var(--tf-sand) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(236, 227, 211, 0.95), rgba(225, 213, 194, 0.98));
+      background-size: 20px 20px, 100% 100%;
+      color: var(--text-main);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    a {
+      color: var(--tf-red);
+      text-decoration: underline;
+      text-decoration-thickness: 1.5px;
+      text-underline-offset: 3px;
+      font-weight: 700;
+      transition: var(--transition);
+    }
+
+    a:hover {
+      color: var(--tf-red-dark);
+      text-decoration-thickness: 2.5px;
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      outline: none;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible {
+      outline: 3px solid var(--tf-amber);
+      outline-offset: 2px;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.4rem;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border: var(--border-width) solid var(--tf-metal-dark);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      text-align: center;
+      user-select: none;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: var(--shadow-pressed);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #c74346 0%, #b8383b 60%, #9e2a2d 100%);
+      color: #ffffff;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(180deg, #d34c4f 0%, #c74346 100%);
+      color: #ffffff;
+      text-decoration: none;
+      box-shadow: 0 3px 0 var(--tf-metal-dark);
+    }
+
+    .btn-primary:disabled {
+      background: #a89f94;
+      border-color: #7d756c;
+      color: #dfd8cf;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: linear-gradient(180deg, #ffffff 0%, #efe7d7 100%);
+      color: var(--tf-metal-dark);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: linear-gradient(180deg, #ffffff 0%, #e2d5c1 100%);
+      color: var(--tf-metal-dark);
+      text-decoration: none;
+      box-shadow: 0 3px 0 var(--tf-metal-dark);
+    }
+
+    .btn-danger {
+      background: linear-gradient(180deg, #bc3131 0%, #a82424 100%);
+      color: #ffffff;
+      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: linear-gradient(180deg, #cd3939 0%, #bc3131 100%);
+      text-decoration: none;
+    }
+
+    .btn-sm {
+      padding: 0.35rem 0.85rem;
+      font-size: 0.98rem;
+    }
+
+    .btn-lg {
+      padding: 0.85rem 1.75rem;
+      font-size: 1.3rem;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.65rem;
+      border: 1.5px solid var(--tf-metal-dark);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 1px 1px 0 var(--tf-metal-dark);
+    }
+
+    .badge-admin {
+      background: linear-gradient(135deg, #b8383b, #8c2424);
+      color: #ffffff;
+      border-color: #272321;
+    }
+
+    .badge-usuario {
+      background: linear-gradient(135deg, #5b7a8c, #3b515e);
+      color: #ffffff;
+      border-color: #272321;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: var(--border-width) solid var(--tf-metal-dark);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      padding: 1.5rem;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .form-label {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      padding: 0.7rem 0.95rem;
+      font-size: 0.95rem;
+      font-family: var(--font-body);
+      color: var(--text-main);
+      background-color: #ffffff;
+      border: 2px solid var(--tf-metal-dark);
+      border-radius: var(--radius-sm);
+      outline: none;
+      box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+      transition: var(--transition);
+    }
+
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--tf-red);
+      box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(222, 149, 56, 0.35);
+      background-color: #fffefb;
+    }
+
+    .form-input.is-invalid, .form-textarea.is-invalid {
+      border-color: var(--danger);
+      background-color: #fff8f8;
+    }
+
+    .form-input.is-invalid:focus, .form-textarea.is-invalid:focus {
+      box-shadow: 0 0 0 3px rgba(168, 36, 36, 0.25);
+    }
+
+    .form-feedback {
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      margin-top: 0.25rem;
+    }
+
+    .feedback-error {
+      color: var(--danger);
+    }
+
+    .feedback-hint {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease-out forwards;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    
