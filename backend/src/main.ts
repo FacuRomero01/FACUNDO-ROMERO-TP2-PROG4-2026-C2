@@ -33,8 +33,8 @@ async function bootstrap() {
   );
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
-  console.log(`Servidor NestJS corriendo en: http://localhost:${port}/api`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`Servidor NestJS corriendo en el puerto ${port}`);
 }
 
 bootstrap();
