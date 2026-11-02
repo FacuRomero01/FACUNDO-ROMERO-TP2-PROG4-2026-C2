@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -11,6 +12,7 @@ import { UsersService } from '../users/users.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { UserRole } from '../users/schemas/user.schema.js';
+import { ArchivosService } from '../archivos/archivos.service.js';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +20,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @Optional() private readonly archivosService?: ArchivosService,
   ) {}
 
   async register(registerDto: RegisterDto, file?: Express.Multer.File) {
@@ -42,8 +45,15 @@ export class AuthService {
     // Encriptar contraseña
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    // Guardar referencia relativa accesible de la imagen
-    const fotoPerfil = `/uploads/avatars/${file.filename}`;
+    // Guardar referencia relativa accesible de la imagen o subir a Cloudinary si está activo
+    let fotoPerfil = `/uploads/avatars/${file.filename}`;
+    if (this.archivosService) {
+      fotoPerfil = await this.archivosService.subirImagen(
+        file,
+        'avatars',
+        fotoPerfil,
+      );
+    }
 
     // Crear usuario forzando siempre el rol 'usuario' por defecto
     // para evitar cualquier manipulación o escalada de privilegios

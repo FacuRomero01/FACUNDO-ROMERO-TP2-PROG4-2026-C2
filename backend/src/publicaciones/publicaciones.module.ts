@@ -7,6 +7,7 @@ import {
 import { PublicacionesService } from './publicaciones.service.js';
 import { PublicacionesController } from './publicaciones.controller.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { ArchivosModule } from '../archivos/archivos.module.js';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthModule } from '../auth/auth.module.js';
       { name: Publicacion.name, schema: PublicacionSchema },
     ]),
     AuthModule,
+    ArchivosModule,
   ],
   controllers: [PublicacionesController],
   providers: [PublicacionesService],

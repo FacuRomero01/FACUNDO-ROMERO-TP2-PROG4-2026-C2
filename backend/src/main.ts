@@ -6,9 +6,14 @@ import * as fs from 'fs';
 
 async function bootstrap() {
   // Asegurar existencia de carpetas de uploads
-  const uploadDir = join(process.cwd(), 'uploads', 'avatars');
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  const uploadDirAvatars = join(process.cwd(), 'uploads', 'avatars');
+  if (!fs.existsSync(uploadDirAvatars)) {
+    fs.mkdirSync(uploadDirAvatars, { recursive: true });
+  }
+
+  const uploadDirPublicaciones = join(process.cwd(), 'uploads', 'publicaciones');
+  if (!fs.existsSync(uploadDirPublicaciones)) {
+    fs.mkdirSync(uploadDirPublicaciones, { recursive: true });
   }
 
   const app = await NestFactory.create(AppModule);

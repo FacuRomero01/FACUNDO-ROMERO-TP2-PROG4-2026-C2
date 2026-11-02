@@ -1,0 +1,291 @@
+<div class="feed-page container animate-fade-in">
+  <div class="feed-layout">
+    <!-- Barra lateral informativa -->
+    <aside class="feed-sidebar">
+      @if (authService.currentUser(); as user) {
+        <div class="profile-card card">
+          <div class="profile-header-bg">
+            <span class="service-stamp">EXPEDIENTE ACTIVO</span>
+          </div>
+          <div class="profile-avatar-wrap">
+            <img
+              [src]="authService.getAvatarUrl(user.fotoPerfil)"
+              [alt]="user.nombre"
+              class="profile-sidebar-avatar"
+              (error)="onAvatarError($event)"
+            />
+          </div>
+          <div class="profile-sidebar-body">
+            <h3 class="profile-name">{{ user.nombre }} {{ user.apellido }}</h3>
+            <span class="profile-username">&#64;{{ user.username }}</span>
+            <span
+              class="badge"
+              [ngClass]="
+                user.perfil === 'administrador'
+                  ? 'badge-admin'
+                  : 'badge-usuario'
+              "
+            >
+              {{ user.perfil }}
+            </span>
+            @if (user.descripcion) {
+              <p class="profile-bio">{{ user.descripcion }}</p>
+            }
+            <hr class="profile-divider" />
+            <a routerLink="/mi-perfil" class="btn btn-secondary btn-sm btn-block">
+              CONSULTAR LEGAJO COMPLETO
+            </a>
+          </div>
+        </div>
+      }
+    </aside>
+
+    <!-- Contenido principal del Feed -->
+    <main class="feed-main">
+      <!-- Formulario de Redacción de Publicación -->
+      <div class="composer-card card">
+        <div class="composer-header">
+          <div class="composer-avatar-wrap">
+            <img
+              [src]="authService.getAvatarUrl(authService.currentUser()?.fotoPerfil)"
+              [alt]="authService.currentUser()?.nombre || 'Usuario'"
+              class="composer-avatar"
+              (error)="onAvatarError($event)"
+            />
+          </div>
+          <div class="composer-title-wrap">
+            <h3 class="composer-heading">EMITIR NUEVO DESPACHO</h3>
+            <span class="composer-subtitle">CANAL OFICIAL DE TRANSMISIÓN</span>
+          </div>
+        </div>
+
+        <form [formGroup]="formularioPublicacion" (ngSubmit)="enviarPublicacion()">
+          <div class="form-group">
+            <label for="titulo" class="form-label">TÍTULO DEL DESPACHO *</label>
+            <input
+              id="titulo"
+              type="text"
+              class="form-control"
+              formControlName="titulo"
+              placeholder="Ej: Reporte de operaciones en el sector..."
+              [class.is-invalid]="
+                formularioPublicacion.get('titulo')?.invalid &&
+                formularioPublicacion.get('titulo')?.touched
+              "
+            />
+            @if (
+              formularioPublicacion.get('titulo')?.invalid &&
+              formularioPublicacion.get('titulo')?.touched
+            ) {
+              <span class="error-text">
+                El título es obligatorio y debe contener al menos 3 caracteres.
+              </span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="descripcion" class="form-label">CONTENIDO / DETALLE *</label>
+            <textarea
+              id="descripcion"
+              rows="3"
+              class="form-control"
+              formControlName="descripcion"
+              placeholder="Escriba el detalle de la transmisión..."
+              [class.is-invalid]="
+                formularioPublicacion.get('descripcion')?.invalid &&
+                formularioPublicacion.get('descripcion')?.touched
+              "
+            ></textarea>
+            @if (
+              formularioPublicacion.get('descripcion')?.invalid &&
+              formularioPublicacion.get('descripcion')?.touched
+            ) {
+              <span class="error-text">
+                La descripción es obligatoria y debe contener al menos 5 caracteres.
+              </span>
+            }
+          </div>
+
+          <!-- Vista previa de imagen seleccionada -->
+          @if (vistaPreviaImagen()) {
+            <div class="image-preview-box">
+              <img [src]="vistaPreviaImagen()!" alt="Vista previa" class="preview-img" />
+              <button
+                type="button"
+                class="btn-remove-preview"
+                (click)="quitarImagenSeleccionada()"
+                title="Remover imagen adjunta"
+              >
+                &times; QUITAR IMAGEN
+              </button>
+            </div>
+          }
+
+          <div class="composer-footer">
+            <div class="composer-attach">
+              <input
+                type="file"
+                id="archivoImagen"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                class="file-input-hidden"
+                (change)="alSeleccionarArchivo($event)"
+                #fileInput
+              />
+              <button
+                type="button"
+                class="btn-attach"
+                (click)="fileInput.click()"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span>
+                  {{ archivoSeleccionado() ? 'CAMBIAR FOTO' : 'ADJUNTAR FOTO' }}
+                </span>
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="formularioPublicacion.invalid || estaEnviando()"
+            >
+              @if (estaEnviando()) {
+                <span class="spinner-sm"></span>
+                <span>TRANSMITIENDO...</span>
+              } @else {
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                >
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                <span>PUBLICAR</span>
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Filtros de Ordenamiento -->
+      <div class="feed-filters">
+        <span class="filters-label">ORDENAR REPORTES:</span>
+        <div class="filter-buttons">
+          <button
+            type="button"
+            class="filter-tab"
+            [class.active]="ordenActual() === 'fecha'"
+            (click)="cambiarOrden('fecha')"
+          >
+            MÁS RECIENTES (FECHA)
+          </button>
+          <button
+            type="button"
+            class="filter-tab"
+            [class.active]="ordenActual() === 'meGusta'"
+            (click)="cambiarOrden('meGusta')"
+          >
+            MÁS POPULARES (ME GUSTA)
+          </button>
+        </div>
+      </div>
+
+      <!-- Estado de carga -->
+      @if (estaCargando()) {
+        <div class="loading-state card">
+          <div class="spinner"></div>
+          <p>Sincronizando despachos de la red...</p>
+        </div>
+      } @else if (publicaciones().length === 0) {
+        <!-- Estado vacío -->
+        <div class="empty-feed card">
+          <svg
+            width="54"
+            height="54"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <h4 class="empty-feed-title">SIN DESPACHOS REGISTRADOS</h4>
+          <p class="empty-feed-text">
+            No hay publicaciones registradas con el criterio seleccionado. ¡Sé el primero en transmitir un reporte!
+          </p>
+        </div>
+      } @else {
+        <!-- Listado de Publicaciones mediante el componente individual -->
+        <div class="posts-list">
+          @for (pub of publicaciones(); track pub._id) {
+            <app-publicacion-tarjeta
+              [publicacion]="pub"
+              [usuarioActual]="authService.currentUser()"
+              (alDarMeGusta)="procesarDarMeGusta($event)"
+              (alQuitarMeGusta)="procesarQuitarMeGusta($event)"
+              (alEliminar)="solicitarBajaPublicacion($event)"
+            />
+          }
+        </div>
+
+        <!-- Controles de Paginación -->
+        <div class="pagination-bar card">
+          <div class="pagination-info">
+            <span>PÁGINA {{ paginaActual() }} DE {{ totalPaginas() }}</span>
+            <span class="pagination-total">({{ totalRegistros() }} PUBLICACIONES)</span>
+          </div>
+
+          <div class="pagination-actions">
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              [disabled]="paginaActual() <= 1 || estaCargando()"
+              (click)="cambiarPagina(paginaActual() - 1)"
+            >
+              &larr; ANTERIOR
+            </button>
+
+            <div class="page-numbers">
+              @for (n of obtenerListaPaginas(); track n) {
+                <button
+                  type="button"
+                  class="page-number-btn"
+                  [class.active]="n === paginaActual()"
+                  (click)="cambiarPagina(n)"
+                >
+                  {{ n }}
+                </button>
+              }
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              [disabled]="paginaActual() >= totalPaginas() || estaCargando()"
+              (click)="cambiarPagina(paginaActual() + 1)"
+            >
+              SIGUIENTE &rarr;
+            </button>
+          </div>
+        </div>
+      }
+    </main>
+  </div>
+</div>
