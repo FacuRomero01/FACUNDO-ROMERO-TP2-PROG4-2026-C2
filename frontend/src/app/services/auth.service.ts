@@ -4,6 +4,8 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AuthResponse, LoginDto, User } from '../models/user.model';
+import { ModalService } from './modal.service';
+import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root',
@@ -11,6 +13,8 @@ import { AuthResponse, LoginDto, User } from '../models/user.model';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly modalService = inject(ModalService);
+  private readonly toastService = inject(ToastService);
 
   private readonly TOKEN_KEY = 'conecta_auth_token';
   private readonly USER_KEY = 'conecta_auth_user';
@@ -18,10 +22,22 @@ export class AuthService {
   private readonly _currentUser = signal<User | null>(this.loadStoredUser());
   private readonly _token = signal<string | null>(this.loadStoredToken());
 
+  private temporizadorAdvertencia: any = null;
+  private temporizadorExpiracion: any = null;
+
   readonly currentUser = this._currentUser.asReadonly();
   readonly token = this._token.asReadonly();
   readonly isAuthenticated = computed(() => !!this._token());
-  readonly isAdmin = computed(() => this._currentUser()?.perfil === 'administrador');
+  readonly isAdmin = computed(
+    () => this._currentUser()?.perfil === 'administrador',
+  );
+
+  constructor() {
+    const tokenInicial = this._token();
+    if (tokenInicial) {
+      this.iniciarTemporizadorSesion(tokenInicial);
+    }
+  }
 
   login(credentials: LoginDto): Observable<AuthResponse> {
     return this.http
@@ -43,7 +59,36 @@ export class AuthService {
       );
   }
 
+  autorizar(): Observable<{ valid: boolean; user: User }> {
+    return this.http
+      .post<{ valid: boolean; user: User }>(
+        `${environment.apiUrl}/auth/autorizar`,
+        {},
+      )
+      .pipe(
+        tap((res) => {
+          if (res && res.user) {
+            this.actualizarUsuario(res.user);
+            if (!this.temporizadorAdvertencia && this._token()) {
+              this.iniciarTemporizadorSesion(this._token()!);
+            }
+          }
+        }),
+      );
+  }
+
+  refrescar(): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>(`${environment.apiUrl}/auth/refrescar`, {})
+      .pipe(
+        tap((response) => {
+          this.setSession(response.token, response.user);
+        }),
+      );
+  }
+
   logout(): void {
+    this.limpiarTemporizadores();
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this._token.set(null);
@@ -56,6 +101,12 @@ export class AuthService {
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
     this._token.set(token);
     this._currentUser.set(user);
+    this.iniciarTemporizadorSesion(token);
+  }
+
+  actualizarUsuario(user: User): void {
+    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    this._currentUser.set(user);
   }
 
   getAvatarUrl(fotoPerfil?: string): string {
@@ -66,6 +117,82 @@ export class AuthService {
       return fotoPerfil;
     }
     return `${environment.baseUrl}${fotoPerfil}`;
+  }
+
+  private iniciarTemporizadorSesion(token: string): void {
+    this.limpiarTemporizadores();
+
+    let tiempoHastaAviso = 10 * 60 * 1000; // 10 minutos por defecto
+    let tiempoHastaVencimiento = 15 * 60 * 1000; // 15 minutos por defecto
+
+    try {
+      const partes = token.split('.');
+      if (partes.length === 3) {
+        const payloadBase64 = partes[1].replace(/-/g, '+').replace(/_/g, '/');
+        const payloadJson = decodeURIComponent(
+          atob(payloadBase64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join(''),
+        );
+        const payload = JSON.parse(payloadJson);
+
+        if (payload.exp) {
+          const milisegundosRestantes = payload.exp * 1000 - Date.now();
+          if (milisegundosRestantes <= 0) {
+            this.logout();
+            return;
+          }
+          tiempoHastaVencimiento = milisegundosRestantes;
+          // El aviso ocurre 5 minutos antes de expirar
+          tiempoHastaAviso = Math.max(0, milisegundosRestantes - 5 * 60 * 1000);
+        }
+      }
+    } catch {
+      // Si falla decodificación de JWT, usar los tiempos estándar
+    }
+
+    this.temporizadorAdvertencia = setTimeout(() => {
+      this.mostrarModalExpiracion();
+    }, tiempoHastaAviso);
+
+    this.temporizadorExpiracion = setTimeout(() => {
+      this.modalService.close();
+      this.toastService.warning('Tu sesión ha finalizado. Por favor, ingresa de nuevo.');
+      this.logout();
+    }, tiempoHastaVencimiento);
+  }
+
+  private mostrarModalExpiracion(): void {
+    this.modalService.confirm(
+      'Aviso de caducidad de sesión',
+      'Quedan 5 minutos de sesión. ¿Deseas extender tu sesión para continuar navegando?',
+      () => {
+        this.refrescar().subscribe({
+          next: () => {
+            this.toastService.success('Sesión extendida correctamente');
+          },
+          error: () => {
+            this.toastService.error('No se pudo extender la sesión');
+            this.logout();
+          },
+        });
+      },
+      'Extender sesión',
+      'Cerrar sesión',
+      'warning',
+    );
+  }
+
+  private limpiarTemporizadores(): void {
+    if (this.temporizadorAdvertencia) {
+      clearTimeout(this.temporizadorAdvertencia);
+      this.temporizadorAdvertencia = null;
+    }
+    if (this.temporizadorExpiracion) {
+      clearTimeout(this.temporizadorExpiracion);
+      this.temporizadorExpiracion = null;
+    }
   }
 
   private loadStoredToken(): string | null {

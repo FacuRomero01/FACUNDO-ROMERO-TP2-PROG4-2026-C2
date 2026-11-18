@@ -127,9 +127,35 @@ export class AuthService {
   }
 
   async authorize(user: any) {
+    const usuarioSanitizado = this.usersService.sanitizeUser(user);
     return {
       valid: true,
-      user,
+      user: usuarioSanitizado,
+      ...usuarioSanitizado,
+    };
+  }
+
+  async refrescarToken(user: any) {
+    const usuarioSanitizado = this.usersService.sanitizeUser(user);
+    const sub = (
+      user._id?.toString() ||
+      user.id ||
+      user.sub
+    ).toString();
+
+    const payload = {
+      sub,
+      email: user.email,
+      username: user.username,
+      perfil: user.perfil,
+    };
+
+    const token = this.jwtService.sign(payload);
+
+    return {
+      message: 'Token refrescado exitosamente',
+      token,
+      user: usuarioSanitizado,
     };
   }
 }

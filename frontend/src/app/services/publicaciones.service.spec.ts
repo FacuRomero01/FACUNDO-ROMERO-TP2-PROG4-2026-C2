@@ -145,4 +145,66 @@ describe('PublicacionesService', () => {
       `${environment.baseUrl}/uploads/test.jpg`,
     );
   });
+
+  it('debe obtener una publicación por ID', () => {
+    service.obtenerPublicacionPorId('pub-999').subscribe((pub) => {
+      expect(pub._id).toBe('pub-999');
+    });
+
+    const req = httpTesting.expectOne(
+      `${environment.apiUrl}/publicaciones/pub-999`,
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({ _id: 'pub-999', titulo: 'Detalle' });
+  });
+
+  it('debe obtener comentarios paginados de una publicación', () => {
+    service.obtenerComentarios('pub-999', 5, 5).subscribe((res) => {
+      expect(res.total).toBe(10);
+      expect(res.comentarios).toHaveLength(1);
+    });
+
+    const req = httpTesting.expectOne(
+      (r) =>
+        r.url === `${environment.apiUrl}/publicaciones/pub-999/comentarios` &&
+        r.params.get('offset') === '5' &&
+        r.params.get('limit') === '5',
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      comentarios: [{ _id: 'c1', mensaje: 'Hola' }],
+      total: 10,
+      offset: 5,
+      limit: 5,
+    });
+  });
+
+  it('debe crear un comentario mediante POST', () => {
+    service.crearComentario('pub-999', 'Nuevo comentario').subscribe((res) => {
+      expect(res.mensaje).toBe('Nuevo comentario');
+    });
+
+    const req = httpTesting.expectOne(
+      `${environment.apiUrl}/publicaciones/pub-999/comentarios`,
+    );
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ mensaje: 'Nuevo comentario' });
+    req.flush({ _id: 'c1', mensaje: 'Nuevo comentario', modificado: false });
+  });
+
+  it('debe editar un comentario mediante PUT', () => {
+    service
+      .editarComentario('pub-999', 'c1', 'Mensaje corregido')
+      .subscribe((res) => {
+        expect(res.modificado).toBe(true);
+        expect(res.mensaje).toBe('Mensaje corregido');
+      });
+
+    const req = httpTesting.expectOne(
+      `${environment.apiUrl}/publicaciones/pub-999/comentarios/c1`,
+    );
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ mensaje: 'Mensaje corregido' });
+    req.flush({ _id: 'c1', mensaje: 'Mensaje corregido', modificado: true });
+  });
 });

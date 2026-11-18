@@ -2,13 +2,18 @@ import {
   Component,
   EventEmitter,
   Input,
+  OnChanges,
+  OnInit,
   Output,
+  SimpleChanges,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { Publicacion } from '../../models/publicacion.model';
+import { FormsModule } from '@angular/forms';
+import { Comentario, Publicacion } from '../../models/publicacion.model';
 import { User } from '../../models/user.model';
 import { AuthService } from '../../services/auth.service';
 import { PublicacionesService } from '../../services/publicaciones.service';
@@ -16,11 +21,11 @@ import { PublicacionesService } from '../../services/publicaciones.service';
 @Component({
   selector: 'app-publicacion-tarjeta',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './publicacion-tarjeta.component.html',
   styleUrl: './publicacion-tarjeta.component.css',
 })
-export class PublicacionTarjetaComponent {
+export class PublicacionTarjetaComponent implements OnInit, OnChanges {
   readonly authService = inject(AuthService);
   readonly publicacionesService = inject(PublicacionesService);
 
@@ -34,8 +39,235 @@ export class PublicacionTarjetaComponent {
 
   readonly desplegarComentarios = signal(false);
 
+  // Paginación y listado de comentarios
+  readonly limitePorCarga = 3;
+  readonly comentarios = signal<Comentario[]>([]);
+  readonly totalComentarios = signal(0);
+  readonly cargandoComentarios = signal(false);
+  readonly comentariosInicializados = signal(false);
+
+  readonly hayMasComentarios = computed(
+    () => this.comentarios().length < this.totalComentarios(),
+  );
+
+  // Formulario rápido para nuevo comentario
+  readonly nuevoComentarioTexto = signal('');
+  readonly enviandoComentario = signal(false);
+
+  // Edición de comentario inline
+  readonly comentarioEnEdicionId = signal<string | null>(null);
+  readonly textoEdicion = signal('');
+  readonly guardandoEdicion = signal(false);
+
+  ngOnInit(): void {
+    this.sincronizarComentariosDesdePublicacion();
+    if (this.siempreMostrarComentarios) {
+      this.cargarComentariosIniciales();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['publicacion'] && !this.comentariosInicializados()) {
+      this.sincronizarComentariosDesdePublicacion();
+    }
+  }
+
+  private sincronizarComentariosDesdePublicacion(): void {
+    if (this.publicacion?.comentarios && this.publicacion.comentarios.length > 0) {
+      const ordenados = [...this.publicacion.comentarios].sort((a, b) => {
+        const tA = new Date(a.createdAt || 0).getTime();
+        const tB = new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+      this.totalComentarios.set(ordenados.length);
+      this.comentarios.set(ordenados.slice(0, this.limitePorCarga));
+    } else {
+      this.totalComentarios.set(0);
+      this.comentarios.set([]);
+    }
+  }
+
   toggleComentarios(): void {
     this.desplegarComentarios.update((valor) => !valor);
+    if (this.desplegarComentarios() && !this.comentariosInicializados()) {
+      this.cargarComentariosIniciales();
+    }
+  }
+
+  cargarComentariosIniciales(): void {
+    if (!this.publicacion?._id) return;
+
+    // Si ya dispone de comentarios locales en el objeto de la publicación
+    if (this.publicacion.comentarios && this.publicacion.comentarios.length > 0) {
+      this.sincronizarComentariosDesdePublicacion();
+      this.comentariosInicializados.set(true);
+      return;
+    }
+
+    // Si no tiene comentarios precargados y existe el servicio
+    if (typeof this.publicacionesService?.obtenerComentarios === 'function') {
+      this.cargandoComentarios.set(true);
+      this.publicacionesService
+        .obtenerComentarios(this.publicacion._id, 0, this.limitePorCarga)
+        .subscribe({
+          next: (res) => {
+            this.comentarios.set(res.comentarios || []);
+            this.totalComentarios.set(
+              res.total ?? (res.comentarios ? res.comentarios.length : 0),
+            );
+            this.comentariosInicializados.set(true);
+            this.cargandoComentarios.set(false);
+          },
+          error: () => {
+            this.sincronizarComentariosDesdePublicacion();
+            this.comentariosInicializados.set(true);
+            this.cargandoComentarios.set(false);
+          },
+        });
+    } else {
+      this.sincronizarComentariosDesdePublicacion();
+      this.comentariosInicializados.set(true);
+    }
+  }
+
+  cargarMasComentarios(): void {
+    if (this.cargandoComentarios() || !this.hayMasComentarios()) {
+      return;
+    }
+
+    const offset = this.comentarios().length;
+    const ordenados = [...(this.publicacion?.comentarios || [])].sort((a, b) => {
+      const tA = new Date(a.createdAt || 0).getTime();
+      const tB = new Date(b.createdAt || 0).getTime();
+      return tB - tA;
+    });
+
+    // Si los comentarios ya están cargados en memoria dentro de la publicación
+    if (ordenados.length > offset) {
+      const nuevos = ordenados.slice(offset, offset + this.limitePorCarga);
+      this.comentarios.update((anteriores) => [...anteriores, ...nuevos]);
+      return;
+    }
+
+    // Si hay más en la base de datos remota
+    if (typeof this.publicacionesService?.obtenerComentarios === 'function') {
+      this.cargandoComentarios.set(true);
+      this.publicacionesService
+        .obtenerComentarios(this.publicacion._id, offset, this.limitePorCarga)
+        .subscribe({
+          next: (res) => {
+            this.comentarios.update((anteriores) => [
+              ...anteriores,
+              ...(res.comentarios || []),
+            ]);
+            this.totalComentarios.set(res.total);
+            this.cargandoComentarios.set(false);
+          },
+          error: () => {
+            this.cargandoComentarios.set(false);
+          },
+        });
+    }
+  }
+
+  enviarComentario(): void {
+    const mensaje = this.nuevoComentarioTexto().trim();
+    if (!mensaje || this.enviandoComentario()) return;
+
+    this.enviandoComentario.set(true);
+
+    if (typeof this.publicacionesService?.crearComentario === 'function') {
+      this.publicacionesService
+        .crearComentario(this.publicacion._id, mensaje)
+        .subscribe({
+          next: (nuevoComentario) => {
+            this.comentarios.update((anteriores) => [
+              nuevoComentario,
+              ...anteriores,
+            ]);
+            this.totalComentarios.update((t) => t + 1);
+
+            if (this.publicacion.comentarios) {
+              this.publicacion.comentarios.unshift(nuevoComentario);
+            } else {
+              this.publicacion.comentarios = [nuevoComentario];
+            }
+
+            this.nuevoComentarioTexto.set('');
+            this.enviandoComentario.set(false);
+          },
+          error: () => {
+            this.enviandoComentario.set(false);
+          },
+        });
+    } else {
+      this.enviandoComentario.set(false);
+    }
+  }
+
+  puedeEditarComentario(comentario: Comentario): boolean {
+    if (!this.usuarioActual || !comentario.autor) return false;
+    const autorId = comentario.autor._id || (comentario.autor as any).id;
+    return autorId === this.usuarioActual._id;
+  }
+
+  iniciarEdicion(comentario: Comentario): void {
+    if (!comentario._id) return;
+    this.comentarioEnEdicionId.set(comentario._id);
+    this.textoEdicion.set(comentario.mensaje);
+  }
+
+  cancelarEdicion(): void {
+    this.comentarioEnEdicionId.set(null);
+    this.textoEdicion.set('');
+  }
+
+  guardarEdicion(comentario: Comentario): void {
+    if (!comentario._id) return;
+    const nuevoTexto = this.textoEdicion().trim();
+    if (!nuevoTexto || this.guardandoEdicion()) return;
+
+    this.guardandoEdicion.set(true);
+
+    if (typeof this.publicacionesService?.editarComentario === 'function') {
+      this.publicacionesService
+        .editarComentario(this.publicacion._id, comentario._id, nuevoTexto)
+        .subscribe({
+          next: (comentarioActualizado) => {
+            this.comentarios.update((lista) =>
+              lista.map((c) =>
+                c._id === comentario._id
+                  ? {
+                      ...c,
+                      mensaje: comentarioActualizado.mensaje,
+                      modificado: true,
+                    }
+                  : c,
+              ),
+            );
+
+            if (this.publicacion.comentarios) {
+              this.publicacion.comentarios = this.publicacion.comentarios.map((c) =>
+                c._id === comentario._id
+                  ? {
+                      ...c,
+                      mensaje: comentarioActualizado.mensaje,
+                      modificado: true,
+                    }
+                  : c,
+              );
+            }
+
+            this.cancelarEdicion();
+            this.guardandoEdicion.set(false);
+          },
+          error: () => {
+            this.guardandoEdicion.set(false);
+          },
+        });
+    } else {
+      this.guardandoEdicion.set(false);
+    }
   }
 
   yaDioMeGusta(): boolean {

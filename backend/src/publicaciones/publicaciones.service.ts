@@ -13,6 +13,9 @@ import {
 } from './schemas/publicacion.schema.js';
 import { CrearPublicacionDto } from './dto/crear-publicacion.dto.js';
 import { FiltrarPublicacionesDto } from './dto/filtrar-publicaciones.dto.js';
+import { CrearComentarioDto } from './dto/crear-comentario.dto.js';
+import { EditarComentarioDto } from './dto/editar-comentario.dto.js';
+import { FiltrarComentariosDto } from './dto/filtrar-comentarios.dto.js';
 import { ArchivosService } from '../archivos/archivos.service.js';
 
 @Injectable()
@@ -278,5 +281,145 @@ export class PublicacionesService {
       .populate('autor', 'nombre apellido username fotoPerfil perfil')
       .populate('comentarios.autor', 'nombre apellido username fotoPerfil')
       .exec();
+  }
+
+  async crearComentario(
+    publicacionId: string,
+    usuarioId: string,
+    datosComentario: CrearComentarioDto,
+  ) {
+    if (!Types.ObjectId.isValid(publicacionId)) {
+      throw new NotFoundException('Publicación no encontrada');
+    }
+
+    const publicacion = await this.publicacionModel
+      .findOne({ _id: publicacionId, activo: true })
+      .exec();
+
+    if (!publicacion) {
+      throw new NotFoundException('Publicación no encontrada');
+    }
+
+    const nuevoId = new Types.ObjectId();
+    const nuevoComentario = {
+      _id: nuevoId,
+      autor: new Types.ObjectId(usuarioId),
+      mensaje: datosComentario.mensaje.trim(),
+      modificado: false,
+      createdAt: new Date(),
+    };
+
+    publicacion.comentarios.push(nuevoComentario as any);
+    await publicacion.save();
+
+    await publicacion.populate(
+      'comentarios.autor',
+      'nombre apellido username fotoPerfil perfil',
+    );
+
+    const comentarioCreado = publicacion.comentarios.find(
+      (c) => c._id?.toString() === nuevoId.toString(),
+    );
+
+    return comentarioCreado || nuevoComentario;
+  }
+
+  async editarComentario(
+    publicacionId: string | undefined,
+    comentarioId: string,
+    usuarioId: string,
+    datosEdicion: EditarComentarioDto,
+  ) {
+    if (!Types.ObjectId.isValid(comentarioId)) {
+      throw new NotFoundException('Comentario no encontrado');
+    }
+
+    const query: Record<string, any> = {
+      activo: true,
+      'comentarios._id': new Types.ObjectId(comentarioId),
+    };
+
+    if (publicacionId && Types.ObjectId.isValid(publicacionId)) {
+      query._id = new Types.ObjectId(publicacionId);
+    }
+
+    const publicacion = await this.publicacionModel
+      .findOne(query)
+      .populate('comentarios.autor', 'nombre apellido username fotoPerfil perfil')
+      .exec();
+
+    if (!publicacion) {
+      throw new NotFoundException('Comentario no encontrado');
+    }
+
+    const comentario = publicacion.comentarios.find(
+      (c) => c._id?.toString() === comentarioId,
+    );
+
+    if (!comentario) {
+      throw new NotFoundException('Comentario no encontrado');
+    }
+
+    const autorId =
+      comentario.autor instanceof Types.ObjectId
+        ? comentario.autor.toString()
+        : (comentario.autor as any)?._id?.toString() ||
+          comentario.autor?.toString();
+
+    if (autorId !== usuarioId) {
+      throw new ForbiddenException(
+        'No posee permisos para editar este comentario',
+      );
+    }
+
+    comentario.mensaje = datosEdicion.mensaje.trim();
+    comentario.modificado = true;
+
+    await publicacion.save();
+
+    return comentario;
+  }
+
+  async listarComentarios(
+    publicacionId: string,
+    filtros: FiltrarComentariosDto,
+  ) {
+    if (!Types.ObjectId.isValid(publicacionId)) {
+      throw new NotFoundException('Publicación no encontrada');
+    }
+
+    const publicacion = await this.publicacionModel
+      .findOne({ _id: publicacionId, activo: true })
+      .populate('comentarios.autor', 'nombre apellido username fotoPerfil perfil')
+      .exec();
+
+    if (!publicacion) {
+      throw new NotFoundException('Publicación no encontrada');
+    }
+
+    const offset = filtros.offset ?? 0;
+    const limit = filtros.limit ?? 5;
+
+    // Ordenar los más recientes primero (createdAt descendente)
+    const comentariosOrdenados = [...(publicacion.comentarios || [])].sort(
+      (a, b) => {
+        const tiempoA = new Date(a.createdAt || 0).getTime();
+        const tiempoB = new Date(b.createdAt || 0).getTime();
+        return tiempoB - tiempoA;
+      },
+    );
+
+    const total = comentariosOrdenados.length;
+    const comentariosPaginados = comentariosOrdenados.slice(
+      offset,
+      offset + limit,
+    );
+
+    return {
+      comentarios: comentariosPaginados,
+      total,
+      offset,
+      limit,
+    };
   }
 }

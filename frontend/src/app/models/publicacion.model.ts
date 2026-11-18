@@ -35,4 +35,19 @@ export interface RespuestaPublicaciones {
   limit: number;
 }
 
+export interface RespuestaComentarios {
+  comentarios: Comentario[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface CrearComentarioPayload {
+  mensaje: string;
+}
+
+export interface EditarComentarioPayload {
+  mensaje: string;
+}
+
 export type OrdenPublicaciones = 'fecha' | 'meGusta';

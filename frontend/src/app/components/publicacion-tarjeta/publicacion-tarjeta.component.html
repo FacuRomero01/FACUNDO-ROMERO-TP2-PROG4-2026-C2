@@ -59,7 +59,11 @@
   </header>
 
   <div class="post-body">
-    <h4 class="post-title">{{ publicacion.titulo }}</h4>
+    <h4 class="post-title">
+      <a [routerLink]="['/publicaciones', publicacion._id]" class="post-title-link">
+        {{ publicacion.titulo }}
+      </a>
+    </h4>
     <p class="post-text">{{ publicacion.descripcion }}</p>
 
     @if (publicacion.imagenUrl) {
@@ -119,21 +123,77 @@
       <span class="action-count">{{ publicacion.comentarios?.length || 0 }}</span>
       <span>COMENTARIOS</span>
     </button>
+
+    <a
+      [routerLink]="['/publicaciones', publicacion._id]"
+      class="action-btn"
+      title="Ver publicación completa y comentar"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+      >
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <line x1="10" y1="14" x2="21" y2="3"></line>
+      </svg>
+      <span>VER DETALLE</span>
+    </a>
   </footer>
 
   @if (desplegarComentarios() || siempreMostrarComentarios) {
     <section class="comments-section">
-      <h5 class="comments-header">
-        REGISTRO DE COMENTARIOS ({{ publicacion.comentarios?.length || 0 }})
-      </h5>
+      <div class="comments-header-row">
+        <h5 class="comments-header">
+          REGISTRO DE COMENTARIOS ({{ totalComentarios() }})
+        </h5>
+        <a [routerLink]="['/publicaciones', publicacion._id]" class="view-all-link">
+          Ver despacho completo &rarr;
+        </a>
+      </div>
 
-      @if (!publicacion.comentarios || publicacion.comentarios.length === 0) {
+      <!-- Formulario rápido de comentario en tarjeta -->
+      <div class="card-quick-comment">
+        <input
+          type="text"
+          class="form-control card-comment-input"
+          placeholder="Escribe un comentario..."
+          [ngModel]="nuevoComentarioTexto()"
+          (ngModelChange)="nuevoComentarioTexto.set($event)"
+          (keyup.enter)="enviarComentario()"
+          maxlength="1000"
+          [disabled]="enviandoComentario()"
+        />
+        <button
+          type="button"
+          class="btn btn-primary btn-sm btn-quick-comment"
+          (click)="enviarComentario()"
+          [disabled]="!nuevoComentarioTexto().trim() || enviandoComentario()"
+        >
+          @if (enviandoComentario()) {
+            <span class="spinner-sm"></span>
+          } @else {
+            <span>Comentar</span>
+          }
+        </button>
+      </div>
+
+      @if (cargandoComentarios() && comentarios().length === 0) {
+        <div class="loading-comments-card">
+          <span class="spinner-sm"></span>
+          <span>Cargando comentarios...</span>
+        </div>
+      } @else if (comentarios().length === 0) {
         <p class="no-comments-text">
           Sin comentarios registrados en este despacho.
         </p>
       } @else {
         <div class="comments-list">
-          @for (comentario of publicacion.comentarios; track $index) {
+          @for (comentario of comentarios(); track comentario._id || $index) {
             <div class="comment-item">
               <img
                 [src]="authService.getAvatarUrl(comentario.autor?.fotoPerfil)"
@@ -156,12 +216,71 @@
                   @if (comentario.modificado) {
                     <span class="comment-edited-tag">[EDITADO]</span>
                   }
+                  @if (puedeEditarComentario(comentario) && comentarioEnEdicionId() !== comentario._id) {
+                    <button
+                      type="button"
+                      class="btn-edit-comment-inline"
+                      (click)="iniciarEdicion(comentario)"
+                    >
+                      editar
+                    </button>
+                  }
                 </div>
-                <p class="comment-text">{{ comentario.mensaje }}</p>
+
+                @if (comentarioEnEdicionId() === comentario._id) {
+                  <div class="inline-edit-box">
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      [ngModel]="textoEdicion()"
+                      (ngModelChange)="textoEdicion.set($event)"
+                      (keyup.enter)="guardarEdicion(comentario)"
+                      maxlength="1000"
+                    />
+                    <div class="inline-edit-actions">
+                      <button
+                        type="button"
+                        class="btn btn-secondary btn-xs"
+                        (click)="cancelarEdicion()"
+                        [disabled]="guardandoEdicion()"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary btn-xs"
+                        (click)="guardarEdicion(comentario)"
+                        [disabled]="guardandoEdicion() || !textoEdicion().trim()"
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                } @else {
+                  <p class="comment-text">{{ comentario.mensaje }}</p>
+                }
               </div>
             </div>
           }
         </div>
+
+        @if (hayMasComentarios()) {
+          <div class="card-load-more-wrap">
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm btn-load-more"
+              (click)="cargarMasComentarios()"
+              [disabled]="cargandoComentarios()"
+            >
+              @if (cargandoComentarios()) {
+                <span class="spinner-sm"></span>
+                <span>Cargando...</span>
+              } @else {
+                <span>Cargar más</span>
+              }
+            </button>
+          </div>
+        }
       }
     </section>
   }

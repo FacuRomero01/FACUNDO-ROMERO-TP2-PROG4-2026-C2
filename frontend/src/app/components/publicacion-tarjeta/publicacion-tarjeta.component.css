@@ -103,6 +103,17 @@
   line-height: 1.15;
 }
 
+.post-title-link {
+  color: inherit;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.post-title-link:hover {
+  color: var(--tf-red);
+  text-decoration: underline;
+}
+
 .post-text {
   font-size: 0.98rem;
   color: #38322f;
@@ -193,12 +204,89 @@
   border-top: 2px solid var(--border-muted);
 }
 
+.comments-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
 .comments-header {
   font-family: var(--font-display);
   font-size: 1.1rem;
   letter-spacing: 0.05em;
   color: var(--text-main);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
+}
+
+.view-all-link {
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  color: var(--tf-red);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.card-quick-comment {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.card-comment-input {
+  flex: 1;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.88rem;
+}
+
+.btn-quick-comment {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.85rem;
+}
+
+.card-load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.loading-comments-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.btn-edit-comment-inline {
+  background: transparent;
+  border: none;
+  color: var(--tf-red);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.inline-edit-box {
+  margin-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.inline-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.btn-xs {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
 }
 
 .no-comments-text {

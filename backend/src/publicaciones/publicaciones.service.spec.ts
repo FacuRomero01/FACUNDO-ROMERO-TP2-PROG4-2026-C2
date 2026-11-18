@@ -334,4 +334,118 @@ describe('PublicacionesService', () => {
       expect(mockChain.limit).toHaveBeenCalledWith(3);
     });
   });
+
+  describe('comentarios', () => {
+    it('debe crear un comentario y guardarlo en la publicación', async () => {
+      const publicacion = crearMockPublicacion();
+      publicacion.populate = vi.fn().mockResolvedValue(publicacion);
+      mockPublicacionModel.findOne = vi.fn().mockReturnValue({
+        exec: vi.fn().mockResolvedValue(publicacion),
+      });
+
+      const dto = { mensaje: 'Gran posteo' };
+      const res = await servicio.crearComentario(mockPublicacionId, mockUsuarioId, dto);
+
+      expect(publicacion.comentarios).toHaveLength(1);
+      expect(publicacion.comentarios[0].mensaje).toBe('Gran posteo');
+      expect(publicacion.comentarios[0].modificado).toBe(false);
+      expect(publicacion.save).toHaveBeenCalled();
+      expect(res.mensaje).toBe('Gran posteo');
+    });
+
+    it('debe editar un comentario y marcar modificado: true', async () => {
+      const comId = new Types.ObjectId();
+      const publicacion = crearMockPublicacion({
+        comentarios: [
+          {
+            _id: comId,
+            autor: new Types.ObjectId(mockUsuarioId),
+            mensaje: 'Mensaje viejo',
+            modificado: false,
+          },
+        ],
+      });
+      publicacion.populate = vi.fn().mockResolvedValue(publicacion);
+      mockPublicacionModel.findOne = vi.fn().mockReturnValue({
+        populate: vi.fn().mockReturnValue({
+          exec: vi.fn().mockResolvedValue(publicacion),
+        }),
+      });
+
+      const dto = { mensaje: 'Mensaje editado' };
+      const res = await servicio.editarComentario(
+        mockPublicacionId,
+        comId.toString(),
+        mockUsuarioId,
+        dto,
+      );
+
+      expect(res.mensaje).toBe('Mensaje editado');
+      expect(res.modificado).toBe(true);
+      expect(publicacion.save).toHaveBeenCalled();
+    });
+
+    it('debe lanzar ForbiddenException si otro usuario intenta editar el comentario', async () => {
+      const comId = new Types.ObjectId();
+      const publicacion = crearMockPublicacion({
+        comentarios: [
+          {
+            _id: comId,
+            autor: new Types.ObjectId(mockUsuarioId),
+            mensaje: 'Mensaje viejo',
+            modificado: false,
+          },
+        ],
+      });
+      mockPublicacionModel.findOne = vi.fn().mockReturnValue({
+        populate: vi.fn().mockReturnValue({
+          exec: vi.fn().mockResolvedValue(publicacion),
+        }),
+      });
+
+      const dto = { mensaje: 'Intento hack' };
+      await expect(
+        servicio.editarComentario(
+          mockPublicacionId,
+          comId.toString(),
+          mockOtroUsuarioId,
+          dto,
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('debe listar comentarios paginados y ordenados por fecha descendente', async () => {
+      const comAntiguo = {
+        _id: new Types.ObjectId(),
+        autor: new Types.ObjectId(mockUsuarioId),
+        mensaje: 'Primero',
+        createdAt: new Date('2026-01-01T10:00:00Z'),
+      };
+      const comReciente = {
+        _id: new Types.ObjectId(),
+        autor: new Types.ObjectId(mockUsuarioId),
+        mensaje: 'Segundo',
+        createdAt: new Date('2026-01-02T10:00:00Z'),
+      };
+
+      const publicacion = crearMockPublicacion({
+        comentarios: [comAntiguo, comReciente],
+      });
+
+      mockPublicacionModel.findOne = vi.fn().mockReturnValue({
+        populate: vi.fn().mockReturnValue({
+          exec: vi.fn().mockResolvedValue(publicacion),
+        }),
+      });
+
+      const res = await servicio.listarComentarios(mockPublicacionId, {
+        offset: 0,
+        limit: 1,
+      });
+
+      expect(res.total).toBe(2);
+      expect(res.comentarios).toHaveLength(1);
+      expect(res.comentarios[0].mensaje).toBe('Segundo'); // El más reciente primero
+    });
+  });
 });

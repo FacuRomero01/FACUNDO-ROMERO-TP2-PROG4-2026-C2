@@ -48,6 +48,7 @@ describe('MiPerfilComponent', () => {
       darMeGusta: vi.fn().mockReturnValue(of({ _id: 'pub-1', meGusta: ['u1'] })),
       quitarMeGusta: vi.fn().mockReturnValue(of({ _id: 'pub-1', meGusta: [] })),
       eliminarPublicacion: vi.fn().mockReturnValue(of({ message: 'OK' })),
+      obtenerComentarios: vi.fn().mockReturnValue(of({ comentarios: [], total: 0, offset: 0, limit: 3 })),
       obtenerUrlImagen: vi.fn().mockReturnValue(null),
     };
 

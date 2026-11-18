@@ -16,7 +16,7 @@ import { LoginDto } from './dto/login.dto.js';
 import { avatarMulterOptions } from './utils/multer.config.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 
-@Controller('auth')
+@Controller(['auth', ''])
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -36,10 +36,17 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  @Post('autorizar')
+  @Post(['autorizar', 'authorize'])
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   async authorize(@Request() req: any) {
     return this.authService.authorize(req.user);
+  }
+
+  @Post(['refrescar', 'refresh'])
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  async refrescar(@Request() req: any) {
+    return this.authService.refrescarToken(req.user);
   }
 }

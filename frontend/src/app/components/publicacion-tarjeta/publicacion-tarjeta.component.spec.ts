@@ -154,4 +154,30 @@ describe('PublicacionTarjetaComponent', () => {
     component.toggleComentarios();
     expect(component.desplegarComentarios()).toBe(true);
   });
+
+  it('debe limitar los comentarios en la primera carga y traer más al presionar cargar más', () => {
+    const comentariosMock = [
+      { _id: '1', autor: mockUsuario, mensaje: 'C1', createdAt: '2026-03-01T10:00:00Z' },
+      { _id: '2', autor: mockUsuario, mensaje: 'C2', createdAt: '2026-03-01T11:00:00Z' },
+      { _id: '3', autor: mockUsuario, mensaje: 'C3', createdAt: '2026-03-01T12:00:00Z' },
+      { _id: '4', autor: mockUsuario, mensaje: 'C4', createdAt: '2026-03-01T13:00:00Z' },
+    ];
+
+    component.publicacion = {
+      ...mockPublicacion,
+      comentarios: comentariosMock,
+    };
+    component.ngOnInit();
+
+    // Límite inicial es 3 comentarios
+    expect(component.comentarios()).toHaveLength(3);
+    expect(component.totalComentarios()).toBe(4);
+    expect(component.hayMasComentarios()).toBe(true);
+
+    component.cargarMasComentarios();
+
+    // Se agrega el siguiente comentario sin perder los anteriores
+    expect(component.comentarios()).toHaveLength(4);
+    expect(component.hayMasComentarios()).toBe(false);
+  });
 });

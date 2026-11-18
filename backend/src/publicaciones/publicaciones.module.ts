@@ -6,6 +6,7 @@ import {
 } from './schemas/publicacion.schema.js';
 import { PublicacionesService } from './publicaciones.service.js';
 import { PublicacionesController } from './publicaciones.controller.js';
+import { ComentariosController } from './comentarios.controller.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { ArchivosModule } from '../archivos/archivos.module.js';
 
@@ -17,7 +18,7 @@ import { ArchivosModule } from '../archivos/archivos.module.js';
     AuthModule,
     ArchivosModule,
   ],
-  controllers: [PublicacionesController],
+  controllers: [PublicacionesController, ComentariosController],
   providers: [PublicacionesService],
   exports: [PublicacionesService, MongooseModule],
 })
