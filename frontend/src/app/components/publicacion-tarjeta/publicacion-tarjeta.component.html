@@ -5,7 +5,7 @@
         [src]="authService.getAvatarUrl(publicacion.autor?.fotoPerfil)"
         [alt]="publicacion.autor?.nombre || 'Usuario'"
         class="post-author-avatar"
-        (error)="onAvatarError($event)"
+        appImagenFallback
       />
       <div class="post-author-meta">
         <div class="author-title-row">
@@ -26,7 +26,9 @@
         <div class="author-sub-row">
           <span class="author-username">&#64;{{ publicacion.autor?.username }}</span>
           <span class="post-dot">&bull;</span>
-          <time class="post-date">{{ formatearFecha(publicacion.createdAt) }}</time>
+          <time class="post-date" [title]="formatearFecha(publicacion.createdAt)">
+            {{ publicacion.createdAt | tiempoRelativo }}
+          </time>
         </div>
       </div>
     </div>
@@ -36,6 +38,7 @@
         type="button"
         class="btn-delete"
         title="Dar de baja publicación"
+        appTooltip="Dar de baja publicación"
         (click)="onEliminarClick()"
       >
         <svg
@@ -64,7 +67,14 @@
         {{ publicacion.titulo }}
       </a>
     </h4>
-    <p class="post-text">{{ publicacion.descripcion }}</p>
+    <p
+      class="post-text"
+      [title]="publicacion.descripcion"
+      (click)="alternarDescripcion()"
+      [style.cursor]="publicacion.descripcion.length > 100 ? 'pointer' : 'default'"
+    >
+      {{ descripcionExpandida() ? publicacion.descripcion : (publicacion.descripcion | acortarTexto: 100) }}
+    </p>
 
     @if (publicacion.imagenUrl) {
       <div class="post-image-container">
@@ -257,7 +267,14 @@
                     </div>
                   </div>
                 } @else {
-                  <p class="comment-text">{{ comentario.mensaje }}</p>
+                  <p
+                    class="comment-text"
+                    [title]="comentario.mensaje"
+                    (click)="alternarComentarioExpandido(comentario._id)"
+                    [style.cursor]="comentario.mensaje.length > 40 ? 'pointer' : 'default'"
+                  >
+                    {{ estaComentarioExpandido(comentario._id) ? comentario.mensaje : (comentario.mensaje | acortarTexto: 40) }}
+                  </p>
                 }
               </div>
             </div>

@@ -30,7 +30,7 @@
             [src]="authService.getAvatarUrl(pub.autor?.fotoPerfil)"
             [alt]="pub.autor?.nombre || 'Usuario'"
             class="detail-avatar"
-            (error)="onAvatarError($event)"
+            appImagenFallback
           />
           <div class="author-details">
             <div class="author-name-row">
@@ -51,7 +51,9 @@
             <div class="author-meta-row">
               <span class="author-username">&#64;{{ pub.autor?.username }}</span>
               <span class="dot-separator">&bull;</span>
-              <time class="post-time">{{ formatearFecha(pub.createdAt) }}</time>
+              <time class="post-time" [title]="formatearFecha(pub.createdAt)">
+                {{ pub.createdAt | tiempoRelativo }}
+              </time>
             </div>
           </div>
         </div>
@@ -61,6 +63,7 @@
             type="button"
             class="btn-delete"
             title="Dar de baja publicación"
+            appTooltip="Dar de baja publicación"
             (click)="confirmarEliminacion()"
           >
             <svg
@@ -311,7 +314,14 @@
                         </div>
                       </div>
                     } @else {
-                      <p class="comment-message-text">{{ comentario.mensaje }}</p>
+                      <p
+                        class="comment-message-text"
+                        [title]="comentario.mensaje"
+                        (click)="alternarComentarioExpandido(comentario._id)"
+                        [style.cursor]="comentario.mensaje.length > 40 ? 'pointer' : 'default'"
+                      >
+                        {{ estaComentarioExpandido(comentario._id) ? comentario.mensaje : (comentario.mensaje | acortarTexto: 40) }}
+                      </p>
                     }
                   </div>
                 </div>

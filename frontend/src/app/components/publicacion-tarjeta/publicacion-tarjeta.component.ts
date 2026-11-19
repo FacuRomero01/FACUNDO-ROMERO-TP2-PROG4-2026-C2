@@ -17,11 +17,23 @@ import { Comentario, Publicacion } from '../../models/publicacion.model';
 import { User } from '../../models/user.model';
 import { AuthService } from '../../services/auth.service';
 import { PublicacionesService } from '../../services/publicaciones.service';
+import { TiempoRelativoPipe } from '../../pipes/tiempo-relativo.pipe';
+import { AcortarTextoPipe } from '../../pipes/acortar-texto.pipe';
+import { ImagenFallbackDirective } from '../../directives/imagen-fallback.directive';
+import { TooltipDirective } from '../../directives/tooltip.directive';
 
 @Component({
   selector: 'app-publicacion-tarjeta',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [
+    CommonModule,
+    RouterModule,
+    FormsModule,
+    TiempoRelativoPipe,
+    AcortarTextoPipe,
+    ImagenFallbackDirective,
+    TooltipDirective,
+  ],
   templateUrl: './publicacion-tarjeta.component.html',
   styleUrl: './publicacion-tarjeta.component.css',
 })
@@ -58,6 +70,8 @@ export class PublicacionTarjetaComponent implements OnInit, OnChanges {
   readonly comentarioEnEdicionId = signal<string | null>(null);
   readonly textoEdicion = signal('');
   readonly guardandoEdicion = signal(false);
+  readonly comentariosExpandidos = signal<Set<string>>(new Set<string>());
+  readonly descripcionExpandida = signal(false);
 
   ngOnInit(): void {
     this.sincronizarComentariosDesdePublicacion();
@@ -316,6 +330,25 @@ export class PublicacionTarjetaComponent implements OnInit, OnChanges {
     } catch {
       return String(fechaStr);
     }
+  }
+
+  alternarDescripcion(): void {
+    this.descripcionExpandida.update((valor) => !valor);
+  }
+
+  alternarComentarioExpandido(id?: string): void {
+    if (!id) return;
+    const actual = new Set(this.comentariosExpandidos());
+    if (actual.has(id)) {
+      actual.delete(id);
+    } else {
+      actual.add(id);
+    }
+    this.comentariosExpandidos.set(actual);
+  }
+
+  estaComentarioExpandido(id?: string): boolean {
+    return !!id && this.comentariosExpandidos().has(id);
   }
 
   onAvatarError(event: Event): void {

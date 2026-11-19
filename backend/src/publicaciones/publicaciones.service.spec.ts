@@ -448,4 +448,80 @@ describe('PublicacionesService', () => {
       expect(res.comentarios[0].mensaje).toBe('Segundo'); // El más reciente primero
     });
   });
+
+  describe('Estadísticas', () => {
+    it('debe calcular estadísticas de publicaciones por usuario', async () => {
+      mockPublicacionModel.aggregate = vi.fn().mockResolvedValue([
+        { usuarioId: '1', username: 'spy', nombreCompleto: 'Red Spy', cantidad: 3 },
+      ]);
+
+      const resultado = await servicio.obtenerEstadisticasPublicacionesPorUsuario({
+        desde: '2026-01-01',
+        hasta: '2026-01-31',
+      });
+
+      expect(resultado).toHaveLength(1);
+      expect(resultado[0].username).toBe('spy');
+      expect(mockPublicacionModel.aggregate).toHaveBeenCalled();
+    });
+
+    it('debe calcular estadísticas de comentarios por tiempo', async () => {
+      mockPublicacionModel.aggregate = vi.fn().mockResolvedValue([
+        { fecha: '2026-01-01', cantidad: 5 },
+      ]);
+
+      const resultado = await servicio.obtenerEstadisticasComentariosPorTiempo({});
+
+      expect(resultado.total).toBe(5);
+      expect(resultado.datos).toHaveLength(1);
+    });
+
+    it('debe calcular estadísticas de comentarios por publicación', async () => {
+      mockPublicacionModel.aggregate = vi.fn().mockResolvedValue([
+        { publicacionId: 'p1', titulo: 'Informe confidencial', cantidad: 10 },
+      ]);
+
+      const resultado = await servicio.obtenerEstadisticasComentariosPorPublicacion({});
+
+      expect(resultado).toHaveLength(1);
+      expect(resultado[0].titulo).toBe('Informe confidencial');
+    });
+
+    it('debe filtrar publicaciones incluyendo todo el día final con formato YYYY-MM-DD', async () => {
+      let matchCapturado: any = null;
+      mockPublicacionModel.aggregate = vi.fn().mockImplementation((pipeline: any[]) => {
+        matchCapturado = pipeline[0].$match;
+        return Promise.resolve([]);
+      });
+
+      await servicio.obtenerEstadisticasPublicacionesPorUsuario({
+        desde: '2026-11-12',
+        hasta: '2026-11-19',
+      });
+
+      expect(matchCapturado).toBeDefined();
+      expect(matchCapturado.createdAt).toBeDefined();
+      expect(matchCapturado.createdAt.$lte).toBeInstanceOf(Date);
+      // El fin de fecha debe ser al menos las 23:59:59 del día solicitado
+      const finEsperadoMinimo = new Date(Date.UTC(2026, 10, 19, 23, 59, 59, 999));
+      expect(matchCapturado.createdAt.$lte.getTime()).toBeGreaterThanOrEqual(
+        finEsperadoMinimo.getTime(),
+      );
+    });
+
+    it('debe obtener un resumen consolidado de estadísticas', async () => {
+      mockPublicacionModel.aggregate = vi
+        .fn()
+        .mockResolvedValueOnce([{ usuarioId: '1', cantidad: 2 }]) // pubs
+        .mockResolvedValueOnce([{ fecha: '2026-01-01', cantidad: 4 }]) // coms tiempo
+        .mockResolvedValueOnce([{ publicacionId: 'p1', cantidad: 4 }]); // coms pub
+
+      const resumen = await servicio.obtenerResumenEstadisticas({});
+
+      expect(resumen.totales.totalPublicaciones).toBe(2);
+      expect(resumen.totales.totalComentarios).toBe(4);
+      expect(resumen.publicacionesPorUsuario).toHaveLength(1);
+      expect(resumen.comentariosPorPublicacion).toHaveLength(1);
+    });
+  });
 });

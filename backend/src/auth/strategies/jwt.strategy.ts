@@ -17,6 +17,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     configService: ConfigService,
     private readonly usersService: UsersService,
   ) {
+    const secretoJwt = configService.get<string>('JWT_SECRET');
+    if (!secretoJwt) {
+      throw new Error('La variable de entorno JWT_SECRET no está configurada.');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -24,9 +29,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         (req: any) => req?.cookies?.token,
       ]),
       ignoreExpiration: false,
-      secretOrKey:
-        configService.get<string>('JWT_SECRET') ||
-        'super_secret_jwt_key_sprint1_progra4_2026',
+      secretOrKey: secretoJwt,
     });
   }
 

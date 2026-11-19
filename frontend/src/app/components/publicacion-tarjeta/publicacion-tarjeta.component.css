@@ -119,6 +119,8 @@
   color: #38322f;
   line-height: 1.55;
   white-space: pre-line;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .post-image-container {
@@ -310,6 +312,8 @@
   background: #fbf5ea;
   border: 1.5px solid var(--border-muted);
   border-radius: var(--radius-sm);
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .comment-avatar {
@@ -324,6 +328,7 @@
 
 .comment-content {
   flex: 1;
+  min-width: 0;
 }
 
 .comment-meta {
@@ -363,6 +368,9 @@
   font-size: 0.88rem;
   color: #38322f;
   line-height: 1.4;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 @media (max-width: 600px) {

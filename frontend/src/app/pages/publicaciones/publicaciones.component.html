@@ -29,7 +29,14 @@
               {{ user.perfil }}
             </span>
             @if (user.descripcion) {
-              <p class="profile-bio">{{ user.descripcion }}</p>
+              <p
+                class="profile-bio"
+                [title]="user.descripcion"
+                (click)="alternarDescripcionPerfil()"
+                [style.cursor]="user.descripcion.length > 30 ? 'pointer' : 'default'"
+              >
+                {{ descripcionPerfilExpandida() ? user.descripcion : (user.descripcion | acortarTexto: 30) }}
+              </p>
             }
             <hr class="profile-divider" />
             <a routerLink="/mi-perfil" class="btn btn-secondary btn-sm btn-block">

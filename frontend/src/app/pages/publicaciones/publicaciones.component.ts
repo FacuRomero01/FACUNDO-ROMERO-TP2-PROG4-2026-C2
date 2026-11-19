@@ -21,6 +21,7 @@ import {
   Publicacion,
 } from '../../models/publicacion.model';
 import { PublicacionTarjetaComponent } from '../../components/publicacion-tarjeta/publicacion-tarjeta.component';
+import { AcortarTextoPipe } from '../../pipes/acortar-texto.pipe';
 
 @Component({
   selector: 'app-publicaciones',
@@ -30,6 +31,7 @@ import { PublicacionTarjetaComponent } from '../../components/publicacion-tarjet
     RouterModule,
     ReactiveFormsModule,
     PublicacionTarjetaComponent,
+    AcortarTextoPipe,
   ],
   templateUrl: './publicaciones.component.html',
   styleUrl: './publicaciones.component.css',
@@ -46,6 +48,7 @@ export class PublicacionesComponent implements OnInit {
   readonly estaEnviando = signal(false);
   readonly publicaciones = signal<Publicacion[]>([]);
   readonly totalRegistros = signal(0);
+  readonly descripcionPerfilExpandida = signal(false);
 
   // Paginación y ordenamiento
   readonly limitePorPagina = 5;
@@ -241,6 +244,10 @@ export class PublicacionesComponent implements OnInit {
         pub._id === publicacionActualizada._id ? publicacionActualizada : pub,
       ),
     );
+  }
+
+  alternarDescripcionPerfil(): void {
+    this.descripcionPerfilExpandida.update((valor) => !valor);
   }
 
   onAvatarError(event: Event): void {

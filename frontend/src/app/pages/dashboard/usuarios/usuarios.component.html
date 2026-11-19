@@ -1,0 +1,354 @@
+<div class="dashboard-page container">
+  <!-- Cabecera del Panel -->
+  <div class="dashboard-header card">
+    <div class="header-info">
+      <span class="dossier-tag">TERMINAL CENTRAL // MANDO SUPERIOR</span>
+      <h1 class="dashboard-title">REGISTRO Y PERSONAL DE CAMPO</h1>
+      <p class="dashboard-subtitle">
+        Control de credenciales, alta de agentes y supervisión de accesos.
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="toggleFormulario()"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>{{ mostrarFormulario() ? 'CANCELAR REGISTRO' : 'NUEVO AGENTE' }}</span>
+      </button>
+
+      <a routerLink="/dashboard/estadisticas" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>ESTADÍSTICAS</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Formulario de Alta de Nuevo Usuario (Mismos datos del registro + Radios de perfil) -->
+  @if (mostrarFormulario()) {
+    <div class="card form-alta-card">
+      <div class="card-header">
+        <h2 class="form-title">FORMULARIO DE ALTA DE PERSONAL</h2>
+        <span class="form-badge">EXPEDIENTE ADMINISTRATIVO</span>
+      </div>
+
+      <form [formGroup]="usuarioForm" (ngSubmit)="guardarNuevoUsuario()" class="alta-form">
+        <div class="form-grid">
+          <!-- Nombre -->
+          <div class="form-group">
+            <label for="nombre" class="form-label">NOMBRE *</label>
+            <input
+              id="nombre"
+              type="text"
+              class="form-control"
+              formControlName="nombre"
+              placeholder="Ej. Saxton"
+            />
+            @if (usuarioForm.get('nombre')?.touched && usuarioForm.get('nombre')?.invalid) {
+              <span class="error-msg">El nombre es obligatorio (mín. 2 letras)</span>
+            }
+          </div>
+
+          <!-- Apellido -->
+          <div class="form-group">
+            <label for="apellido" class="form-label">APELLIDO *</label>
+            <input
+              id="apellido"
+              type="text"
+              class="form-control"
+              formControlName="apellido"
+              placeholder="Ej. Hale"
+            />
+            @if (usuarioForm.get('apellido')?.touched && usuarioForm.get('apellido')?.invalid) {
+              <span class="error-msg">El apellido es obligatorio (mín. 2 letras)</span>
+            }
+          </div>
+
+          <!-- Correo -->
+          <div class="form-group">
+            <label for="email" class="form-label">CORREO ELECTRÓNICO *</label>
+            <input
+              id="email"
+              type="email"
+              class="form-control"
+              formControlName="email"
+              placeholder="agente@mannco.com"
+            />
+            @if (usuarioForm.get('email')?.touched && usuarioForm.get('email')?.invalid) {
+              <span class="error-msg">Ingrese un correo electrónico válido</span>
+            }
+          </div>
+
+          <!-- Nombre de usuario -->
+          <div class="form-group">
+            <label for="username" class="form-label">NOMBRE DE USUARIO *</label>
+            <input
+              id="username"
+              type="text"
+              class="form-control"
+              formControlName="username"
+              placeholder="saxton_hale"
+            />
+            @if (usuarioForm.get('username')?.touched && usuarioForm.get('username')?.invalid) {
+              <span class="error-msg">Al menos 3 caracteres (sin espacios ni caracteres especiales)</span>
+            }
+          </div>
+
+          <!-- Contraseña -->
+          <div class="form-group">
+            <label for="password" class="form-label">CONTRASEÑA *</label>
+            <input
+              id="password"
+              type="password"
+              class="form-control"
+              formControlName="password"
+              placeholder="••••••••"
+            />
+            @if (usuarioForm.get('password')?.touched && usuarioForm.get('password')?.invalid) {
+              <span class="error-msg">Mínimo 8 caracteres, 1 mayúscula y 1 número</span>
+            }
+          </div>
+
+          <!-- Repetir Contraseña -->
+          <div class="form-group">
+            <label for="repetirPassword" class="form-label">REPETIR CONTRASEÑA *</label>
+            <input
+              id="repetirPassword"
+              type="password"
+              class="form-control"
+              formControlName="repetirPassword"
+              placeholder="••••••••"
+            />
+            @if (usuarioForm.get('repetirPassword')?.touched && usuarioForm.hasError('passwordMismatch')) {
+              <span class="error-msg">Las contraseñas no coinciden</span>
+            }
+          </div>
+
+          <!-- Fecha de Nacimiento -->
+          <div class="form-group">
+            <label for="fechaNacimiento" class="form-label">FECHA DE NACIMIENTO *</label>
+            <input
+              id="fechaNacimiento"
+              type="date"
+              class="form-control"
+              formControlName="fechaNacimiento"
+            />
+            @if (usuarioForm.get('fechaNacimiento')?.touched && usuarioForm.get('fechaNacimiento')?.invalid) {
+              <span class="error-msg">La fecha de nacimiento es obligatoria</span>
+            }
+          </div>
+
+          <!-- Foto de Perfil (File) -->
+          <div class="form-group">
+            <label for="fotoPerfil" class="form-label">FOTOGRAFÍA DE EXPEDIENTE</label>
+            <input
+              id="fotoPerfil"
+              type="file"
+              class="form-control-file"
+              (change)="onFileChange($event)"
+              accept="image/*"
+            />
+            @if (fileError()) {
+              <span class="error-msg">{{ fileError() }}</span>
+            }
+            @if (avatarPreview()) {
+              <div class="preview-wrap">
+                <img [src]="avatarPreview()" alt="Previsualización" class="avatar-preview" />
+                <span class="preview-text">Imagen seleccionada</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Descripción -->
+        <div class="form-group full-width">
+          <label for="descripcion" class="form-label">DESCRIPCIÓN / OBSERVACIONES DE SERVICIO</label>
+          <textarea
+            id="descripcion"
+            class="form-control"
+            formControlName="descripcion"
+            rows="2"
+            placeholder="Breve reseña u observaciones sobre la labor del agente..."
+          ></textarea>
+        </div>
+
+        <!-- Selector de Perfil con DOS RADIO BUTTONS (Requisito Sprint 4) -->
+        <div class="form-group perfil-selector-group full-width">
+          <label class="form-label">ASIGNACIÓN DE ROL Y PRIVILEGIOS *</label>
+          <div class="radio-options">
+            <label class="radio-option" [class.selected]="usuarioForm.get('perfil')?.value === 'usuario'">
+              <input
+                type="radio"
+                name="perfil"
+                formControlName="perfil"
+                value="usuario"
+              />
+              <div class="radio-content">
+                <span class="radio-title">USUARIO (OPERADOR ESTÁNDAR)</span>
+                <span class="radio-desc">Acceso a publicaciones, comentarios y expediente personal.</span>
+              </div>
+            </label>
+
+            <label class="radio-option" [class.selected]="usuarioForm.get('perfil')?.value === 'administrador'">
+              <input
+                type="radio"
+                name="perfil"
+                formControlName="perfil"
+                value="administrador"
+              />
+              <div class="radio-content">
+                <span class="radio-title">ADMINISTRADOR (MANDO CENTRAL)</span>
+                <span class="radio-desc">Gestión integral de personal, moderación total y estadísticas.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            (click)="toggleFormulario()"
+            [disabled]="guardandoUsuario()"
+          >
+            CANCELAR
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="guardandoUsuario() || usuarioForm.invalid"
+          >
+            {{ guardandoUsuario() ? 'EXPIDIENDO CREDENCIAL...' : 'REGISTRAR AGENTE' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Listado de Usuarios -->
+  <div class="card tabla-card">
+    <div class="card-header">
+      <div class="card-title-wrap">
+        <h2 class="card-title">PERSONAL EN SERVICIO</h2>
+        <span class="conteo-badge">{{ usuarios().length }} REGISTRADOS</span>
+      </div>
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm"
+        (click)="cargarUsuarios()"
+        [disabled]="estaCargando()"
+        appTooltip="Refrescar lista de usuarios"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        <span>ACTUALIZAR</span>
+      </button>
+    </div>
+
+    @if (estaCargando()) {
+      <div class="cargando-wrap">
+        <div class="spinner"></div>
+        <p>ACCEDIENDO A LOS REGISTROS CLASIFICADOS...</p>
+      </div>
+    } @else if (usuarios().length === 0) {
+      <div class="vacio-wrap">
+        <p>NO SE ENCONTRARON USUARIOS REGISTRADOS EN EL SISTEMA.</p>
+      </div>
+    } @else {
+      <div class="tabla-scroll">
+        <table class="tabla-usuarios">
+          <thead>
+            <tr>
+              <th>AGENTE</th>
+              <th>USUARIO</th>
+              <th>CORREO</th>
+              <th>ROL</th>
+              <th>ESTADO</th>
+              <th class="text-right">ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of usuarios(); track user._id) {
+              <tr appResaltarFila [class.fila-inactiva]="!user.activo">
+                <td>
+                  <div class="user-celda">
+                    <img
+                      [src]="authService.getAvatarUrl(user.fotoPerfil)"
+                      [alt]="user.nombre"
+                      class="user-thumb"
+                      appImagenFallback
+                    />
+                    <div class="user-nombres">
+                      <span class="user-fullname">{{ user.nombre }} {{ user.apellido }}</span>
+                      @if (user.descripcion) {
+                        <span class="user-desc" [title]="user.descripcion">{{ user.descripcion | acortarTexto: 35 }}</span>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="username-tag">&#64;{{ user.username }}</span>
+                </td>
+                <td>
+                  <span class="email-text">{{ user.email }}</span>
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge-admin]="user.perfil === 'administrador'"
+                    [class.badge-usuario]="user.perfil === 'usuario'"
+                  >
+                    {{ user.perfil | rolFormato }}
+                  </span>
+                </td>
+                <td>
+                  @if (user.activo) {
+                    <span class="status-pill status-activo">
+                      <span class="status-dot"></span> HABILITADO
+                    </span>
+                  } @else {
+                    <span class="status-pill status-inactivo">
+                      <span class="status-dot"></span> DESHABILITADO
+                    </span>
+                  }
+                </td>
+                <td class="text-right">
+                  @if (user.activo) {
+                    <button
+                      type="button"
+                      class="btn btn-danger btn-sm"
+                      (click)="confirmarDeshabilitar(user)"
+                      appTooltip="Dar de baja lógica"
+                    >
+                      DESHABILITAR
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm"
+                      (click)="confirmarHabilitar(user)"
+                      appTooltip="Dar de alta lógica"
+                    >
+                      HABILITAR
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

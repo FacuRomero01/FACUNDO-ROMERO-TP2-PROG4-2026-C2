@@ -19,6 +19,10 @@ import { PublicacionesService } from '../../services/publicaciones.service';
 import { ToastService } from '../../services/toast.service';
 import { ModalService } from '../../services/modal.service';
 import { Comentario, Publicacion } from '../../models/publicacion.model';
+import { TiempoRelativoPipe } from '../../pipes/tiempo-relativo.pipe';
+import { AcortarTextoPipe } from '../../pipes/acortar-texto.pipe';
+import { ImagenFallbackDirective } from '../../directives/imagen-fallback.directive';
+import { TooltipDirective } from '../../directives/tooltip.directive';
 
 @Component({
   selector: 'app-publicacion-detalle',
@@ -28,6 +32,10 @@ import { Comentario, Publicacion } from '../../models/publicacion.model';
     RouterModule,
     FormsModule,
     ReactiveFormsModule,
+    TiempoRelativoPipe,
+    AcortarTextoPipe,
+    ImagenFallbackDirective,
+    TooltipDirective,
   ],
   templateUrl: './publicacion-detalle.component.html',
   styleUrl: './publicacion-detalle.component.css',
@@ -60,6 +68,7 @@ export class PublicacionDetalleComponent implements OnInit {
   // Modo edición de comentario
   readonly comentarioEnEdicionId = signal<string | null>(null);
   readonly textoEdicion = signal<string>('');
+  readonly comentariosExpandidos = signal<Set<string>>(new Set<string>());
 
   readonly formularioComentario: FormGroup = this.fb.group({
     mensaje: [
@@ -321,6 +330,21 @@ export class PublicacionDetalleComponent implements OnInit {
     } catch {
       return String(fechaStr);
     }
+  }
+
+  alternarComentarioExpandido(id?: string): void {
+    if (!id) return;
+    const actual = new Set(this.comentariosExpandidos());
+    if (actual.has(id)) {
+      actual.delete(id);
+    } else {
+      actual.add(id);
+    }
+    this.comentariosExpandidos.set(actual);
+  }
+
+  estaComentarioExpandido(id?: string): boolean {
+    return !!id && this.comentariosExpandidos().has(id);
   }
 
   onAvatarError(event: Event): void {
